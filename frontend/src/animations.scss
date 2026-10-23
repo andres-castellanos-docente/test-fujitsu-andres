@@ -1,0 +1,253 @@
+/*
+ * Animações da aplicação.
+ *
+ * Inspiradas no projeto CheilApprovals (que usa @angular/animations no Angular 9).
+ * No Angular 22 o pacote @angular/animations está depreciado; aqui os mesmos efeitos
+ * são feitos com CSS puro + a API nativa `animate.enter`. Só `transform` e `opacity`
+ * são animados: não afetam o layout e rodam na GPU.
+ */
+
+:root {
+  /* Ritmo da troca de tela (mesmos valores do slideEntreRotas de referência) */
+  --route-wait: 250ms;
+  --route-duration: 520ms;
+  --route-interval: 110ms;
+
+  --ease-emphasized: cubic-bezier(0.35, 0, 0.25, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---------------------------------------------------------------------------
+ * 1. Troca de tela pelo menu: blocos entram em cascata pela esquerda
+ *
+ * O componente roteado é inserido logo após o <router-outlet>, então
+ * `router-outlet + * > *` são os filhos DIRETOS da tela que entrou (cabeçalho,
+ * card...). Uma tabela conta como um único bloco: nada de animar 200 linhas.
+ * ------------------------------------------------------------------------- */
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-48px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+main > router-outlet + * > *,
+.stagger > * {
+  animation: slide-in-left var(--route-duration) var(--ease-emphasized) both;
+  animation-delay: var(--route-wait);
+}
+
+@for $i from 2 through 6 {
+  main > router-outlet + * > *:nth-child(#{$i}) {
+    animation-delay: calc(var(--route-wait) + #{$i - 1} * var(--route-interval));
+  }
+  /* Grupos internos (ex.: os dois cards do cadastro) continuam a cascata */
+  .stagger > *:nth-child(#{$i}) {
+    animation-delay: calc(var(--route-wait) + #{$i} * var(--route-interval));
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * 2. Menu lateral: itens sobem com giro 3D e efeito mola, um após o outro
+ * ------------------------------------------------------------------------- */
+@keyframes menu-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(2.5rem) rotateX(90deg) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.nav-list {
+  perspective: 600px;
+}
+
+.nav-animating .nav-item {
+  animation: menu-item-in 0.8s var(--ease-spring) both;
+  animation-delay: var(--item-delay, 0ms);
+}
+
+.nav-item {
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.25s ease;
+
+  /* Barra indicadora do item ativo: cresce a partir do centro */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 8px auto 8px 0;
+    width: 4px;
+    border-radius: 0 4px 4px 0;
+    background: var(--mat-sys-primary);
+    transform: scaleY(0);
+    transition: transform 0.35s var(--ease-spring);
+  }
+
+  &.mdc-list-item--activated::before {
+    transform: scaleY(1);
+  }
+
+  .mat-icon {
+    transition: transform 0.3s var(--ease-spring);
+  }
+
+  &:hover .mat-icon {
+    transform: translateX(3px) scale(1.12);
+  }
+
+  &:active .mat-icon {
+    transform: scale(0.85);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * 3. Botões: feedback ao passar o mouse e ao clicar
+ * ------------------------------------------------------------------------- */
+.mat-mdc-button-base {
+  transition:
+    transform 0.18s var(--ease-spring),
+    box-shadow 0.2s ease;
+
+  .mat-icon {
+    transition: transform 0.3s var(--ease-spring);
+  }
+}
+
+.mat-mdc-unelevated-button:not(:disabled):hover,
+.mat-mdc-outlined-button:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: var(--mat-sys-level2);
+}
+
+.mat-mdc-button-base:not(:disabled):active {
+  transform: translateY(0) scale(0.95);
+  box-shadow: none;
+}
+
+.mat-mdc-icon-button:not(:disabled):active {
+  transform: scale(0.85);
+}
+
+/* Variações de ícone por tipo de ação */
+.btn-nudge:not(:disabled):hover .mat-icon {
+  transform: translateX(4px) rotate(-12deg); /* "enviar" */
+}
+
+.btn-rotate:not(:disabled):hover .mat-icon {
+  transform: rotate(90deg); /* "adicionar" */
+}
+
+.btn-spin:not(:disabled):hover .mat-icon {
+  transform: rotate(-180deg); /* "atualizar" / "gerar novo ID" */
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.is-spinning .mat-icon {
+  animation: spin 0.9s linear infinite;
+}
+
+/* Ícone que entra girando (troca de tema) */
+@keyframes icon-swap-in {
+  from {
+    opacity: 0;
+    transform: rotate(-120deg) scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.icon-swap-in {
+  animation: icon-swap-in 0.45s var(--ease-spring);
+}
+
+/* Ícone de confirmação após salvar */
+@keyframes icon-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.icon-pop {
+  animation: icon-pop 0.5s var(--ease-spring);
+}
+
+/* O "balanço" do formulário inválido é feito via Web Animations API (EventForm.shakeCard) */
+
+/* ---------------------------------------------------------------------------
+ * 4. Conteúdo que aparece após uma ação (filtro, recarga, erro)
+ * ------------------------------------------------------------------------- */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Linhas da tabela e cartões mobile: cascata curta, limitada às 12 primeiras */
+.animated-rows tr.mat-mdc-row,
+.animated-rows > li {
+  animation: row-in 0.35s var(--ease-emphasized) both;
+}
+
+@for $i from 2 through 12 {
+  .animated-rows tr.mat-mdc-row:nth-child(#{$i}),
+  .animated-rows > li:nth-child(#{$i}) {
+    animation-delay: #{($i - 1) * 35}ms;
+  }
+}
+
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.drop-in {
+  animation: drop-in 0.35s var(--ease-spring);
+}
+
+/* ---------------------------------------------------------------------------
+ * Acessibilidade: respeita "reduzir movimento" do sistema operacional
+ * ------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

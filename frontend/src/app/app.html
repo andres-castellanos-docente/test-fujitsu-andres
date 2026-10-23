@@ -1,0 +1,52 @@
+<a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+
+<mat-toolbar class="app-toolbar">
+  @if (isHandset()) {
+    <button mat-icon-button type="button" (click)="sidenav.toggle()" aria-label="Abrir menu de navegação">
+      <mat-icon aria-hidden="true">menu</mat-icon>
+    </button>
+  }
+  <mat-icon class="text-primary" aria-hidden="true">factory</mat-icon>
+  <span class="ml-2 truncate font-medium">Event Processor</span>
+  <span class="flex-1"></span>
+  <app-theme-toggle />
+</mat-toolbar>
+
+<mat-sidenav-container class="app-container">
+  <mat-sidenav
+    #sidenav
+    class="app-sidenav"
+    [mode]="isHandset() ? 'over' : 'side'"
+    [opened]="!isHandset()"
+    [attr.role]="isHandset() ? 'dialog' : 'navigation'"
+    aria-label="Menu principal"
+    (openedStart)="menuAnimating.set(true)"
+    (closedStart)="menuAnimating.set(false)"
+  >
+    <mat-nav-list class="nav-list" [class.nav-animating]="menuAnimating()">
+      @for (item of navItems; track item.path; let i = $index) {
+        <a
+          mat-list-item
+          class="nav-item"
+          [style.--item-delay]="100 + i * 60 + 'ms'"
+          [routerLink]="item.path"
+          routerLinkActive
+          #rla="routerLinkActive"
+          [routerLinkActiveOptions]="{ exact: true }"
+          [activated]="rla.isActive"
+          [attr.aria-current]="rla.isActive ? 'page' : null"
+          (click)="closeOnHandset(sidenav)"
+        >
+          <mat-icon matListItemIcon aria-hidden="true">{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <main id="conteudo" class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8" tabindex="-1">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

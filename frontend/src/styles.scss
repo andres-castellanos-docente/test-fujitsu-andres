@@ -1,0 +1,68 @@
+@use '@angular/material' as mat;
+@use './animations';
+
+/*
+ * Tema Material 3. `theme-type: color-scheme` gera as cores com `light-dark()`,
+ * então basta alternar a propriedade CSS `color-scheme` para trocar o modo.
+ */
+html {
+  color-scheme: light;
+
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$orange-palette,
+        theme-type: color-scheme,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+
+  &.dark {
+    color-scheme: dark;
+  }
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+/* Snackbars de feedback */
+.snack-success {
+  @include mat.snack-bar-overrides(
+    (
+      container-color: #1b5e20,
+      supporting-text-color: #ffffff,
+      button-color: #c8e6c9,
+    )
+  );
+}
+
+.snack-error {
+  @include mat.snack-bar-overrides(
+    (
+      container-color: var(--mat-sys-error-container),
+      supporting-text-color: var(--mat-sys-on-error-container),
+      button-color: var(--mat-sys-on-error-container),
+    )
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: none;
+  }
+}

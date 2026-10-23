@@ -1,0 +1,133 @@
+<app-page-header title="Eventos registrados" subtitle="Consulta dos eventos recebidos pela API">
+  <button
+    mat-icon-button
+    class="btn-spin"
+    type="button"
+    [class.is-spinning]="events.isLoading()"
+    (click)="events.reload()"
+    [disabled]="events.isLoading()"
+    matTooltip="Atualizar"
+    aria-label="Atualizar lista de eventos"
+  >
+    <mat-icon aria-hidden="true">refresh</mat-icon>
+  </button>
+  <a mat-flat-button class="btn-rotate" routerLink="/eventos/novo">
+    <mat-icon aria-hidden="true">add</mat-icon>
+    Novo evento
+  </a>
+</app-page-header>
+
+<mat-card appearance="outlined">
+  <mat-card-content>
+    <div class="flex flex-col gap-3 pb-2 md:flex-row md:items-center md:justify-between">
+      <mat-button-toggle-group
+        hideSingleSelectionIndicator
+        aria-label="Filtrar por tipo de evento"
+        [value]="typeFilter()"
+        (change)="typeFilter.set($event.value)"
+      >
+        <mat-button-toggle [value]="null">Todos</mat-button-toggle>
+        <mat-button-toggle value="PRODUCTION">Produção</mat-button-toggle>
+        <mat-button-toggle value="QUALITY">Qualidade</mat-button-toggle>
+      </mat-button-toggle-group>
+
+      <mat-form-field subscriptSizing="dynamic" class="w-full md:w-72">
+        <mat-label>Buscar por ID ou descrição</mat-label>
+        <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+        <input matInput type="search" [value]="search()" (input)="onSearch($event)" />
+      </mat-form-field>
+    </div>
+
+    <p class="my-2 text-sm text-on-surface-variant" aria-live="polite">
+      {{ totals().all }} evento(s) exibido(s) · {{ totals().quality }} de qualidade
+    </p>
+
+    @if (events.isLoading()) {
+      <mat-progress-bar mode="indeterminate" aria-label="Carregando eventos" />
+    }
+
+    @if (errorMessage(); as message) {
+      <div role="alert" animate.enter="drop-in" class="my-4 flex flex-col items-start gap-3 rounded-xl bg-surface-container-high p-4 sm:flex-row sm:items-center">
+        <mat-icon class="text-error" aria-hidden="true">error</mat-icon>
+        <span class="flex-1">{{ message }}</span>
+        <button mat-stroked-button type="button" (click)="events.reload()">Tentar novamente</button>
+      </div>
+    } @else {
+      <!-- Desktop/tablet: tabela -->
+      <!-- animated-rows: linhas entram em cascata ao carregar, filtrar ou atualizar -->
+      <div class="animated-rows hidden overflow-x-auto md:block">
+        <table
+          mat-table
+          [dataSource]="rows()"
+          matSort
+          [matSortActive]="sort().active"
+          [matSortDirection]="sort().direction"
+          (matSortChange)="sort.set($event)"
+          class="events-table"
+        >
+          <caption class="sr-only">Eventos registrados</caption>
+
+          <ng-container matColumnDef="eventId">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
+            <td mat-cell *matCellDef="let e" class="font-mono text-sm">{{ e.eventId }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="eventType">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Tipo</th>
+            <td mat-cell *matCellDef="let e"><app-event-type-badge [type]="e.eventType" /></td>
+          </ng-container>
+
+          <ng-container matColumnDef="description">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Descrição</th>
+            <td mat-cell *matCellDef="let e" class="max-w-md break-words">{{ e.description }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="timestamp">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Data/hora do evento</th>
+            <td mat-cell *matCellDef="let e" class="whitespace-nowrap">{{ e.timestamp | date: 'dd/MM/yyyy HH:mm:ss' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="receivedAt">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Recebido em</th>
+            <td mat-cell *matCellDef="let e" class="whitespace-nowrap text-on-surface-variant">
+              {{ e.receivedAt | date: 'dd/MM/yyyy HH:mm:ss' }}
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          <tr class="mat-mdc-row" *matNoDataRow>
+            <td class="mat-mdc-cell p-6 text-center text-on-surface-variant" [attr.colspan]="displayedColumns.length">
+              @if (!events.isLoading()) {
+                Nenhum evento encontrado.
+              }
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Mobile: lista em cartões -->
+      <ul class="animated-rows m-0 list-none space-y-3 p-0 md:hidden" aria-label="Eventos registrados">
+        @for (e of rows(); track e.eventId) {
+          <li class="rounded-xl border border-outline-variant bg-surface-container-low p-4">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-mono text-sm font-semibold">{{ e.eventId }}</span>
+              <app-event-type-badge [type]="e.eventType" />
+            </div>
+            <p class="my-2 break-words">{{ e.description }}</p>
+            <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-3 text-xs text-on-surface-variant">
+              <dt>Evento:</dt>
+              <dd class="m-0">{{ e.timestamp | date: 'dd/MM/yyyy HH:mm:ss' }}</dd>
+              <dt>Recebido:</dt>
+              <dd class="m-0">{{ e.receivedAt | date: 'dd/MM/yyyy HH:mm:ss' }}</dd>
+            </dl>
+          </li>
+        } @empty {
+          @if (!events.isLoading()) {
+            <li class="p-6 text-center text-on-surface-variant">Nenhum evento encontrado.</li>
+          }
+        }
+      </ul>
+    }
+  </mat-card-content>
+</mat-card>

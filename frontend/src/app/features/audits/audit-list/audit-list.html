@@ -1,0 +1,71 @@
+<app-page-header title="Auditoria" subtitle="Registros gerados automaticamente para eventos do tipo QUALITY">
+  <button
+    mat-icon-button
+    class="btn-spin"
+    type="button"
+    [class.is-spinning]="audits.isLoading()"
+    (click)="audits.reload()"
+    [disabled]="audits.isLoading()"
+    matTooltip="Atualizar"
+    aria-label="Atualizar auditoria"
+  >
+    <mat-icon aria-hidden="true">refresh</mat-icon>
+  </button>
+</app-page-header>
+
+<mat-card appearance="outlined">
+  <mat-card-content>
+    @if (audits.isLoading()) {
+      <mat-progress-bar mode="indeterminate" aria-label="Carregando auditoria" />
+    }
+
+    @if (errorMessage(); as message) {
+      <div role="alert" animate.enter="drop-in" class="my-4 flex flex-col items-start gap-3 rounded-xl bg-surface-container-high p-4 sm:flex-row sm:items-center">
+        <mat-icon class="text-error" aria-hidden="true">error</mat-icon>
+        <span class="flex-1">{{ message }}</span>
+        <button mat-stroked-button type="button" (click)="audits.reload()">Tentar novamente</button>
+      </div>
+    } @else {
+      <div class="animated-rows overflow-x-auto">
+        <table mat-table [dataSource]="rows()" class="w-full min-w-[720px] bg-transparent">
+          <caption class="sr-only">Registros de auditoria</caption>
+
+          <ng-container matColumnDef="createdAt">
+            <th mat-header-cell *matHeaderCellDef>Data</th>
+            <td mat-cell *matCellDef="let a" class="whitespace-nowrap">{{ a.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="eventId">
+            <th mat-header-cell *matHeaderCellDef>Evento</th>
+            <td mat-cell *matCellDef="let a" class="font-mono text-sm">{{ a.eventId }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="eventType">
+            <th mat-header-cell *matHeaderCellDef>Tipo</th>
+            <td mat-cell *matCellDef="let a"><app-event-type-badge [type]="a.eventType" /></td>
+          </ng-container>
+
+          <ng-container matColumnDef="action">
+            <th mat-header-cell *matHeaderCellDef>Ação</th>
+            <td mat-cell *matCellDef="let a" class="font-mono text-xs">{{ a.action }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="details">
+            <th mat-header-cell *matHeaderCellDef>Detalhes</th>
+            <td mat-cell *matCellDef="let a" class="break-words text-on-surface-variant">{{ a.details }}</td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          <tr class="mat-mdc-row" *matNoDataRow>
+            <td class="mat-mdc-cell p-6 text-center text-on-surface-variant" [attr.colspan]="displayedColumns.length">
+              @if (!audits.isLoading()) {
+                Nenhum registro de auditoria. Cadastre um evento QUALITY para gerar um.
+              }
+            </td>
+          </tr>
+        </table>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

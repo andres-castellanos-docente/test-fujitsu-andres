@@ -1,0 +1,117 @@
+<app-page-header title="Cadastrar evento" subtitle="Simule o envio de um evento por um equipamento da fábrica">
+  <a mat-stroked-button class="btn-nudge" routerLink="/eventos">
+    <mat-icon aria-hidden="true">table_view</mat-icon>
+    Ver eventos
+  </a>
+</app-page-header>
+
+<div class="stagger grid gap-6 lg:grid-cols-3">
+  <mat-card #formCard appearance="outlined" class="lg:col-span-2">
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="grid gap-x-4 gap-y-2 pt-2 sm:grid-cols-2">
+        <mat-form-field>
+          <mat-label>ID do evento</mat-label>
+          <input matInput formControlName="eventId" autocomplete="off" maxlength="50" />
+          <button
+            mat-icon-button
+            matSuffix
+            class="btn-spin"
+            type="button"
+            (click)="regenerateId()"
+            matTooltip="Gerar novo ID"
+            aria-label="Gerar novo ID do evento"
+          >
+            <mat-icon aria-hidden="true">autorenew</mat-icon>
+          </button>
+          <mat-hint>Identificador único do evento.</mat-hint>
+          @let eventId = form.controls.eventId;
+          @if (eventId.hasError('required')) {
+            <mat-error>O ID é obrigatório.</mat-error>
+          } @else if (eventId.hasError('pattern')) {
+            <mat-error>Use apenas letras, números, "-" ou "_".</mat-error>
+          } @else if (eventId.hasError('maxlength')) {
+            <mat-error>Máximo de 50 caracteres.</mat-error>
+          } @else if (eventId.hasError('duplicate')) {
+            <mat-error>Este evento já foi processado.</mat-error>
+          } @else if (eventId.hasError('server')) {
+            <mat-error>{{ eventId.getError('server') }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Tipo do evento</mat-label>
+          <mat-select formControlName="eventType">
+            @for (type of eventTypes; track type) {
+              <mat-option [value]="type">{{ typeLabels[type] }} ({{ type }})</mat-option>
+            }
+          </mat-select>
+          @if (form.controls.eventType.hasError('required')) {
+            <mat-error>Selecione o tipo do evento.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field class="sm:col-span-2">
+          <mat-label>Data/hora do evento</mat-label>
+          <input matInput type="datetime-local" step="1" formControlName="timestamp" />
+          @if (form.controls.timestamp.hasError('required')) {
+            <mat-error>Informe a data/hora.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field class="sm:col-span-2">
+          <mat-label>Descrição</mat-label>
+          <textarea
+            matInput
+            formControlName="description"
+            rows="4"
+            [maxlength]="descriptionMaxLength"
+            placeholder="Ex.: Production line started"
+          ></textarea>
+          <mat-hint align="end">{{ form.controls.description.value.length }} / {{ descriptionMaxLength }}</mat-hint>
+          @let description = form.controls.description;
+          @if (description.hasError('required')) {
+            <mat-error>A descrição é obrigatória.</mat-error>
+          } @else if (description.hasError('server')) {
+            <mat-error>{{ description.getError('server') }}</mat-error>
+          }
+        </mat-form-field>
+
+        <div class="flex flex-col-reverse gap-2 pt-2 sm:col-span-2 sm:flex-row sm:justify-end">
+          <button mat-button type="button" (click)="resetForm()" [disabled]="submitting()">Limpar</button>
+          <button mat-flat-button class="btn-nudge" type="submit" [disabled]="submitting()">
+            @if (submitting()) {
+              <mat-progress-spinner diameter="18" mode="indeterminate" aria-label="Enviando" />
+            } @else if (justSaved()) {
+              <mat-icon aria-hidden="true" animate.enter="icon-pop">check_circle</mat-icon>
+            } @else {
+              <mat-icon aria-hidden="true">send</mat-icon>
+            }
+            {{ justSaved() ? 'Registrado' : 'Registrar evento' }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <aside aria-labelledby="regras-titulo">
+    <mat-card appearance="outlined" class="h-full">
+      <mat-card-content>
+        <h2 id="regras-titulo" class="mt-0 text-lg font-medium">Regras de processamento</h2>
+        <ul class="m-0 list-none space-y-4 p-0 text-sm text-on-surface-variant">
+          <li class="flex flex-col gap-1">
+            <app-event-type-badge type="PRODUCTION" />
+            <span>Apenas registrado.</span>
+          </li>
+          <li class="flex flex-col gap-1">
+            <app-event-type-badge type="QUALITY" />
+            <span>Registrado e gera um registro de auditoria.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <mat-icon class="shrink-0 text-error" aria-hidden="true">block</mat-icon>
+            <span>Eventos com o mesmo ID são rejeitados (HTTP 409) e não são reprocessados.</span>
+          </li>
+        </ul>
+      </mat-card-content>
+    </mat-card>
+  </aside>
+</div>
